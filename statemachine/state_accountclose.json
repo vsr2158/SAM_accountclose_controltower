@@ -1,0 +1,71 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "Lambda Invoke",
+  "States": {
+    "Lambda Invoke": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "${FunctionAccountCloseArn}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Choice"
+    },
+    "Choice": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "And": [
+            {
+              "Variable": "$.Status",
+              "StringEquals": "FAIL"
+            },
+            {
+              "Variable": "$.exception_type",
+              "StringEquals": "AccountAlreadyClosedException"
+            }
+          ],
+          "Next": "Success"
+        },
+        {
+          "Variable": "$.Status",
+          "StringEquals": "SUCCESS",
+          "Next": "Success"
+        },
+        {
+          "Variable": "$.exception_type",
+          "StringEquals": "ConstraintViolationException",
+          "Next": "Wait"
+        },
+        {
+          "Variable": "$.Status",
+          "StringEquals": "FAIL",
+          "Next": "Wait"
+        }
+      ],
+      "Default": "Success"
+    },
+    "Wait": {
+      "Type": "Wait",
+      "Seconds": 86400,
+      "Next": "Lambda Invoke",
+      "InputPath": "$.event"
+    },
+    "Success": {
+      "Type": "Succeed"
+    }
+  }
+}

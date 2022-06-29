@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Sample SAM Template for accountclose
+
+Resources:
+  StateAccountClose:
+    Type: AWS::Serverless::StateMachine # More info about State Machine Resource: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-statemachine.html
+    Properties:
+      DefinitionUri: statemachine/state_accountclose.json
+      DefinitionSubstitutions:
+        FunctionAccountCloseArn: !GetAtt FunctionAccountClose.Arn
+      Events:
+        ServiceCatalog:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source:
+                - aws.servicecatalog
+      Policies: # Find out more about SAM policy templates: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-policy-templates.html
+        - LambdaInvokePolicy:
+            FunctionName: !Ref FunctionAccountClose
+
+  FunctionAccountClose:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html
+    Properties:
+      CodeUri: functions/function_accountclose/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Timeout: 60
+      Role: !GetAtt RoleFunctionAccountClose.Arn
+      Layers:
+        - !Ref LayerFunctionAccountClose
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          LOG_LEVEL: DEBUG
+
+  LayerFunctionAccountClose:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: LayerFunctionAccountClose
+      Description: Layer for Function
+      ContentUri: dependencies/
+      CompatibleRuntimes:
+        - python3.9
+        - python3.7
+      LicenseInfo: 'MIT'
+
+  RoleFunctionAccountClose:
+    Type: "AWS::IAM::Role"
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSOrganizationsFullAccess
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
