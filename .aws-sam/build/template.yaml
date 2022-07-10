@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'Sample SAM Template for accountclose
+
+  '
+Resources:
+  StateAccountClose:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: ../../statemachine/state_accountclose.json
+      DefinitionSubstitutions:
+        FunctionAccountCloseArn:
+          Fn::GetAtt:
+          - FunctionAccountClose
+          - Arn
+      Events:
+        ServiceCatalog:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source:
+              - aws.servicecatalog
+      Policies:
+      - LambdaInvokePolicy:
+          FunctionName:
+            Ref: FunctionAccountClose
+  FunctionAccountClose:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: FunctionAccountClose
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Timeout: 60
+      Role:
+        Fn::GetAtt:
+        - RoleFunctionAccountClose
+        - Arn
+      Layers:
+      - Ref: LayerFunctionAccountClose
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          LOG_LEVEL: DEBUG
+    Metadata:
+      SamResourceId: FunctionAccountClose
+  LayerFunctionAccountClose:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: LayerFunctionAccountClose
+      Description: Layer for Function
+      ContentUri: ../../dependencies
+      CompatibleRuntimes:
+      - python3.9
+      - python3.7
+      LicenseInfo: MIT
+  RoleFunctionAccountClose:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      - arn:aws:iam::aws:policy/AWSOrganizationsFullAccess
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
