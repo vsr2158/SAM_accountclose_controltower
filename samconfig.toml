@@ -2,10 +2,10 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "ac3"
-s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-cmsrrbsegy3t"
-s3_prefix = "ac3"
-region = "us-east-1"
+stack_name = "ac4"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-us4ly7gc0f59"
+s3_prefix = "ac4"
+region = "us-west-2"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
 image_repositories = []
